@@ -2,51 +2,55 @@
 #include <stdio.h>
 #include <math.h>
 
-
-int getLengthOfInt(long num);
-bool checkCard(long cardNum);
-int getFirstDigit(long input);
+int getLengthOfLong(long num);
+int getFirstTwoDigits(long input);
+bool getAndCheckChecksum(long cardNum, int product, int lastDigit);
 
 int main(void) 
 {
     long input = get_long("Insert number: ");
-    int lengthOfInput = getLengthOfInt(input);
-    int firstDigit = getFirstDigit(input);
+    int lengthOfInput = getLengthOfLong(input);
+    int firstDigit = getFirstTwoDigits(input);
 
     // American Express
-    if (lengthOfInput == 15 && firstDigit == 3)
+    if (lengthOfInput == 15 && firstDigit == 34 || lengthOfInput == 15 && firstDigit == 37) //Filters input to check initial validity
     {
-        if (checkCard(input) == true)
+        if (getAndCheckChecksum(input / 10, 0, input % 10) == 
+            true)  //divides input with 10 to remove last digit, and input % 10 to get last digit
         {
             printf("AMEX\n");
         }
         else
         {
-            printf("INVALID\n");
+            printf("amex INVALID\n");
         }
     }
+
     //  Visa
-    else if (lengthOfInput == 13 && firstDigit == 4 || lengthOfInput == 16 && firstDigit == 4)
+    else if (lengthOfInput == 13 && firstDigit / 10 == 4 || 
+             lengthOfInput == 16 && firstDigit / 10 == 4)    //Filters input to check initial validity
     {
-        if (checkCard(input) == true)
+        if (getAndCheckChecksum(input / 10, 0, input % 10) == 
+            true) //divides input with 10 to remove last digit, and input % 10 to get last digit
         {
             printf("VISA\n");
         }
         else
         {
-            printf("INVALID\n");
+            printf("visa INVALID\n");
         }
     }
+
     // MasterCard
-    else if (lengthOfInput == 16 && firstDigit == 5)
+    else if (lengthOfInput == 16 && firstDigit >= 51 && firstDigit <= 55)   //Filters input to check initial validity
     {
-        if (checkCard(input) == true)
+        if (getAndCheckChecksum(input / 10, 0, input % 10) == true) //input / 10 to remove last digit, input % 10 to get last digit
         {
             printf("MASTERCARD\n");
         }
         else
         {
-            printf("INVALID\n");
+            printf("master INVALID\n");
         }
     }
     else
@@ -55,43 +59,68 @@ int main(void)
     }
 }
 
-int getLengthOfInt(long num)
+int getLengthOfLong(long num)    //Gets length of inputed long for initial filtering. recursive
 {
-    int length = log10(num) + 1;
+    int length = floor(log10(num)) + 1;
     return length;
 }
 
-int getFirstDigit(long input)
+int getFirstTwoDigits(long input)   //Gets the first two digits of the cardNum for initial filtering. recusive
 {
-    if (input < 10) return input;
-    return getFirstDigit(input/10);
+    if (input < 100) 
+    {
+        return input;
+    }
+    return getFirstTwoDigits(input / 10);
 }
 
-bool checkCard(long cardNum)
+bool getAndCheckChecksum(long cardNum, int product, int lastDigit)
 {
-    // chop off last digit
-    long cardNumCopy = cardNum / 10;
-    int product1 = 0;
-    int product2 = 0;
-    int lengthOfNum = getLengthOfInt(cardNumCopy);
-    // checks every other number
-    while (lengthOfNum > 2)
+    if (cardNum < 10)                                        //if true, the loop is on the last digit
     {
-        product1 += cardNumCopy % 10 * 2;
-        cardNumCopy /= 100;
-    }
-    while (lengthOfNum > 2)
-    {
-        product2 += cardNum % 10 * 2;
-        cardNum /= 100;
+        if (cardNum % 10 * 2 >= 10)                          //Splits number into 2 if its over 9 and adds the digits to product1
+        {
+            int chop = cardNum % 10 * 2;
+            product += chop % 10;
+            chop /= 10;
+            product += chop;
+            cardNum /= 10;
+        }
+        else                                                //Adds number as normal if not over 9
+        {
+            product += cardNum * 2;
+        }
+        if ((product + lastDigit) % 10 == 0)                //Adds everything together, and checks if the checksum is valid
+        {
+            return true;
+        }
+        return false;
     }
 
-    if ((product1 + product2) % 10 == 0)
+    if (cardNum % 10 * 2 >= 10)                             //Splits number into 2 if its over 9 and adds the digits to product1
     {
-        return true;
+        int chop = cardNum % 10 * 2;
+        product += chop % 10;
+        chop /= 10;
+        product += chop;
+        cardNum /= 10;
+    }
+    else                                                    //If number is 9 or under, modulo 10, *2 and add to product1
+    {
+        product += cardNum % 10 * 2;
+        cardNum /= 10;
+    }
+    
+    if (cardNum < 10)
+    {
+        product += cardNum % 10;
+        cardNum /= 10;
+        return getAndCheckChecksum(cardNum, product, lastDigit);
     }
     else
     {
-        return false;
+        product += cardNum % 10;
+        cardNum /= 10;
+        return getAndCheckChecksum(cardNum, product, lastDigit);
     }
 }
